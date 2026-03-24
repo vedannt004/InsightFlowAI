@@ -146,11 +146,11 @@ export default function ProfilePage() {
             </p>
             
             <Dialog>
-              <DialogTrigger asChild>
+              <DialogTrigger render={
                 <Button variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-all uppercase text-[11px] font-bold tracking-widest px-6">
                   Delete My Account
                 </Button>
-              </DialogTrigger>
+              } />
               <DialogContent className="sm:max-w-md">
                 <DialogHeader className="items-center text-center">
                   <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-4">
@@ -162,10 +162,8 @@ export default function ProfilePage() {
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-3 mt-4">
-                  <DialogClose asChild>
-                    <Button variant="outline" className="flex-1 rounded-xl">
-                      Cancel
-                    </Button>
+                  <DialogClose render={<Button variant="outline" className="flex-1 rounded-xl" />}>
+                    Cancel
                   </DialogClose>
                   <Button 
                     variant="destructive" 
