@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import connectDB from "@/lib/mongodb";
 import Sale from "@/models/Sale";
+import Insight from "@/models/Insight";
 import { generateInsights } from "@/lib/gemini";
 
 export async function GET(req: NextRequest) {
@@ -13,6 +14,8 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = (session.user as any).id;
+    const businessName = (session.user as any).business_name || "Unknown Business";
+    const industry = (session.user as any).industry || "General";
     await connectDB();
 
     const totalSales = await Sale.countDocuments({ user_id: userId });
@@ -114,18 +117,54 @@ export async function GET(req: NextRequest) {
       consistency: { score: Math.round(consistencyScore), weight: "20%", label: "Revenue Consistency" }
     };
     
+    // ── MARKET LEARNING: Fetch recent health-score insights from similar-industry businesses ──
+    const similarHealthInsights = await Insight.find({
+      industry,
+      userId: { $ne: userId },
+      insightType: "health-score",
+    })
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .lean();
+
+    const similarHealthCount = new Set(similarHealthInsights.map((d) => d.userId)).size;
+
+    // Build market context string for the prompt
+    const healthMarketContext =
+      similarHealthInsights.length > 0
+        ? `\n\nMARKET BENCHMARK (from ${similarHealthCount} similar ${industry} businesses): Average health scores in your industry — ${JSON.stringify(
+            similarHealthInsights.map((d) => ({
+              score: (d.dataContext as any)?.totalScore,
+              grade: (d.dataContext as any)?.grade,
+            }))
+          )}. Use this to contextualize whether the user is above or below their industry peers.`
+        : "";
+
     // Use Gemini for a dynamic personalized health score summary
     let aiSummary = "Your business is performing adequately but there's room for improvement.";
     try {
       const prompt = `
-        You are an expert AI business analyst. The user's business has a health score of ${totalScore}/100 and a grade of ${grade}.
+        You are an expert AI business analyst. The user's ${industry} business has a health score of ${totalScore}/100 and a grade of ${grade}.
         Here is the breakdown of their score metrics:
         ${JSON.stringify(breakdown)}
+        ${healthMarketContext}
         
         Write a very concise (2-3 sentences max) encouraging and analytical paragraph summarizing their business health and highlighting the immediate most important area to focus on based strictly on the lowest scoring metric. 
         Do not use markdown formatting, just return plain text.
       `;
       aiSummary = await generateInsights(prompt);
+
+      // ── SAVE HEALTH SCORE INSIGHT TO DB (non-blocking) ──
+      Insight.create({
+        userId,
+        businessName,
+        industry,
+        insightType: "health-score",
+        insights: [{ score: totalScore, grade, breakdown }],
+        dataContext: { totalScore, grade, breakdown },
+      }).catch((err: Error) =>
+        console.error("Failed to save health-score insight to DB:", err.message)
+      );
     } catch (err: any) {
       console.error("Health score AI summary failed", err.message);
       

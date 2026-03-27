@@ -8,6 +8,7 @@ export default function InsightsPage() {
   const [data, setData] = useState<any>(null);
   const [healthScore, setHealthScore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [marketContext, setMarketContext] = useState<any>(null);
   const { format } = useCurrency();
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function InsightsPage() {
       .then(([rec, hs]) => {
         setData(rec);
         setHealthScore(hs);
+        if (rec?.marketContext) setMarketContext(rec.marketContext);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -37,6 +39,31 @@ export default function InsightsPage() {
           <LoadingSpinner text="Analyzing your data..." />
         ) : (
           <>
+            {/* Market Intelligence Banner */}
+            {marketContext && marketContext.similarBusinesses > 0 && (
+              <div className="mb-6 flex items-center gap-3 px-5 py-3.5 rounded-xl border border-violet-500/30 bg-violet-500/5">
+                <div className="w-9 h-9 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-base">🌐</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    Market Intelligence Active
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    AI trained on insights from{" "}
+                    <span className="text-violet-400 font-bold">{marketContext.similarBusinesses}</span>{" "}
+                    similar <span className="text-violet-400 font-medium">{marketContext.industry}</span> business{marketContext.similarBusinesses !== 1 ? "es" : ""}
+                    {marketContext.insightsLearned > 0 && (
+                      <> &mdash; analysed <span className="text-violet-400 font-bold">{marketContext.insightsLearned}</span> market data points</>
+                    )}
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-violet-500/20 text-violet-400 border border-violet-500/30 whitespace-nowrap">
+                  Live Learning
+                </span>
+              </div>
+            )}
+
             {/* Business Health Score */}
             {healthScore && healthScore.score > 0 && (
               <div className="mb-8 p-8 rounded-2xl border border-border bg-card">
