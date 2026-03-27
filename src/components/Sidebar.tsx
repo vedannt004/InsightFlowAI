@@ -13,7 +13,8 @@ import {
   UserCircle, 
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from "lucide-react";
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/insights", label: "AI Insights", icon: <Sparkles size={18} /> },
   { href: "/forecast", label: "Forecast", icon: <TrendingUp size={18} /> },
   { href: "/segments", label: "Segments", icon: <Users size={18} /> },
+  { href: "/chat", label: "AI Assistant", icon: <MessageSquare size={18} /> },
   { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
 ];
 
